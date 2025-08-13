@@ -1,102 +1,136 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock, Mail, Shield, Users } from "lucide-react";
+
+export default function LandingPage() {
+  const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const router = useRouter();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock authentication - in production, this would validate invite codes
+    if (inviteCode === "FOUNDERS2024" || inviteCode === "DEMO") {
+      router.push("/dashboard");
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Hero Section */}
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold text-gold mb-4">BOARDROOM</h1>
+            <p className="text-xl text-foreground mb-2">
+              Invitation-only boardroom for founders.
+            </p>
+            <p className="text-lg text-mid">
+              Privacy-first. High-signal. Move faster together.
+            </p>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="text-left">
+              <Shield className="h-8 w-8 text-gold mb-3" />
+              <h3 className="font-semibold mb-2">Privacy First</h3>
+              <p className="text-sm text-mid">
+                End-to-end encrypted conversations. Your data never leaves our secure infrastructure.
+              </p>
+            </div>
+            <div className="text-left">
+              <Users className="h-8 w-8 text-gold mb-3" />
+              <h3 className="font-semibold mb-2">Curated Network</h3>
+              <p className="text-sm text-mid">
+                10 founding members. Each with 10% equity. Strategic introductions only.
+              </p>
+            </div>
+            <div className="text-left">
+              <Lock className="h-8 w-8 text-gold mb-3" />
+              <h3 className="font-semibold mb-2">Invitation Only</h3>
+              <p className="text-sm text-mid">
+                Access by invitation from existing members. Quality over quantity.
+              </p>
+            </div>
+          </div>
+
+          {/* Login Card */}
+          <Card className="max-w-md mx-auto bg-panel border-border">
+            <CardHeader>
+              <CardTitle>Member Access</CardTitle>
+              <CardDescription className="text-mid">
+                Enter your invitation code to access the boardroom
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleLogin}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="founder@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="inviteCode" className="text-sm font-medium">
+                    Invitation Code
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid" />
+                    <Input
+                      id="inviteCode"
+                      type="password"
+                      placeholder="Enter your invite code"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-3">
+                <Button type="submit" className="w-full">
+                  Access Boardroom
+                </Button>
+                <div className="flex gap-2">
+                  <Link href="/membership" className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      Join as Member
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-xs text-mid text-center">
+                  For demo access, use code: <span className="font-mono text-gold">DEMO</span>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </div>
+
+      {/* Footer */}
+      <footer className="py-6 px-4 border-t border-border">
+        <div className="max-w-4xl mx-auto text-center text-sm text-mid">
+          <p>© 2024 Boardroom. Cyprus-based entity. 10% equity per founding member.</p>
+        </div>
       </footer>
     </div>
   );

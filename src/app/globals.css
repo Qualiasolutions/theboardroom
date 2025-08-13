@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
+/* Design tokens */
 :root {
+  /* Light mode defaults (will be overridden by .dark) */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0b0b0c;
+  --panel: #f5f6f7;
+  --gold: #d4af37;
+  --gold-soft: #c9a227;
+  --mid: #7e838c;
+  --border: #e3e5e8;
+}
+
+.dark {
+  --background: #0b0b0c; /* deep black */
+  --foreground: #f5f6f7; /* near white */
+  --panel: #111214; /* panel */
+  --gold: #d4af37;
+  --gold-soft: #c9a227;
+  --mid: #7e838c;
+  --border: #22242a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-panel: var(--panel);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-mid: var(--mid);
+  --color-border: var(--border);
+  --font-sans: var(--font-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Global styles */
+html, body, #__next { height: 100%; }
+body { background: var(--background); color: var(--foreground); }
+
+/* Zero radius everywhere */
+* { border-radius: 0 !important; }
+
+/* Typography */
+.prose { max-width: 65ch; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-body {
-  background: var(--background);
+::-webkit-scrollbar-track {
+  background: var(--panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mid);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-soft);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(212, 175, 55, 0.2);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Focus states */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }

@@ -1,0 +1,52 @@
+[
+  { 
+    "id": "notif-1", 
+    "type": "reply",
+    "title": "Fawzi replied to your thread in Cyprus Strategy", 
+    "message": "Agree with the Q2 timeline. I can connect us with the nominee director.",
+    "time": "1h ago",
+    "timestamp": "2024-01-10T15:30:00Z",
+    "unread": true,
+    "link": "/rooms/cyprus-strategy/thread-1"
+  },
+  { 
+    "id": "notif-2", 
+    "type": "briefing",
+    "title": "New briefing: Cyprus Strategy Session", 
+    "message": "Scheduled for Mon, Jan 15 at 3:00 PM GMT",
+    "time": "3h ago",
+    "timestamp": "2024-01-10T13:00:00Z",
+    "unread": true,
+    "link": "/briefings/briefing-1"
+  },
+  {
+    "id": "notif-3",
+    "type": "introduction",
+    "title": "Introduction request approved",
+    "message": "Marcus approved your intro request to Omar Khalil (PayRail)",
+    "time": "5h ago",
+    "timestamp": "2024-01-10T11:00:00Z",
+    "unread": false,
+    "link": "/introductions/intro-2"
+  },
+  {
+    "id": "notif-4",
+    "type": "mention",
+    "title": "Sarah mentioned you in Tech Stack",
+    "message": "@fawzi Great analysis on Supabase. We're seeing similar results.",
+    "time": "1d ago",
+    "timestamp": "2024-01-09T20:00:00Z",
+    "unread": false,
+    "link": "/rooms/tech-stack/thread-3"
+  },
+  {
+    "id": "notif-5",
+    "type": "room",
+    "title": "New room created: Growth Strategies",
+    "message": "Leila created a new room for growth discussions",
+    "time": "2d ago",
+    "timestamp": "2024-01-08T14:00:00Z",
+    "unread": false,
+    "link": "/rooms/growth-strategies"
+  }
+]

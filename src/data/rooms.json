@@ -1,0 +1,52 @@
+[
+  { 
+    "id": "cyprus-strategy", 
+    "name": "Cyprus Strategy", 
+    "charter": "Operate as a Cyprus-based company with shared equity and joint governance.", 
+    "signal": "high",
+    "members": ["abdelrahman", "fawzi", "leila", "sarah"],
+    "lastActivity": "2024-01-10T14:30:00Z",
+    "threadCount": 12,
+    "description": "Strategic planning for Cyprus incorporation, tax optimization, and governance structure."
+  },
+  { 
+    "id": "capital-alloc", 
+    "name": "Capital Allocation", 
+    "charter": "Efficient deployment into high-signal bets; strict post-mortems.", 
+    "signal": "medium",
+    "members": ["abdelrahman", "fawzi", "marcus"],
+    "lastActivity": "2024-01-09T18:45:00Z",
+    "threadCount": 8,
+    "description": "Investment strategies, portfolio allocation, and performance reviews."
+  },
+  { 
+    "id": "hiring", 
+    "name": "Hiring & Talent", 
+    "charter": "Founder-network first. High-bar, low-ego.", 
+    "signal": "low",
+    "members": ["fawzi", "leila", "sarah", "marcus"],
+    "lastActivity": "2024-01-08T10:15:00Z",
+    "threadCount": 15,
+    "description": "Talent acquisition strategies, referrals, and hiring best practices."
+  },
+  {
+    "id": "growth-strategies",
+    "name": "Growth Strategies",
+    "charter": "Scale efficiently with shared playbooks and tested frameworks.",
+    "signal": "high",
+    "members": ["abdelrahman", "leila", "sarah"],
+    "lastActivity": "2024-01-10T20:00:00Z",
+    "threadCount": 22,
+    "description": "Growth hacking, customer acquisition, and scaling methodologies."
+  },
+  {
+    "id": "tech-stack",
+    "name": "Tech Stack & Infrastructure",
+    "charter": "Share technical insights, infrastructure decisions, and architecture patterns.",
+    "signal": "medium",
+    "members": ["fawzi", "sarah", "marcus"],
+    "lastActivity": "2024-01-09T16:30:00Z",
+    "threadCount": 18,
+    "description": "Technology choices, infrastructure optimization, and development best practices."
+  }
+]
