@@ -5,11 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import notifications from "@/data/notifications.json";
 
 export function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = 0; // No notifications without backend
 
   return (
     <header className="fixed top-0 right-0 lg:left-64 left-0 h-16 bg-background border-b border-border z-40">

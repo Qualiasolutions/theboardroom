@@ -7,6 +7,7 @@ import {
   Users, 
   Handshake, 
   FileText, 
+  Layout,
   Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/boardroom", label: "Boardroom", icon: Layout },
   { href: "/rooms", label: "Rooms", icon: Users },
   { href: "/introductions", label: "Introductions", icon: Handshake },
   { href: "/briefings", label: "Briefings", icon: FileText },
