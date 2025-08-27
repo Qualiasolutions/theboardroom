@@ -5,43 +5,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, BoardItem } from "@/lib/store";
 import { 
-  Plus, Edit3, Save, X, Target, Calendar, Users, TrendingUp, 
+  Plus, Edit3, Save, X, Target, Calendar, TrendingUp, 
   Download, Upload, Share2, Grid3X3, FileText, Lightbulb,
-  MessageSquare, UserCheck, Clock, Filter, Search, MoreHorizontal,
-  Zap, AlertTriangle, CheckCircle, Star, ArrowRight, Link2, Layout
+  MessageSquare, UserCheck, Clock, Search, MoreHorizontal,
+  Zap, AlertTriangle, CheckCircle, Star, Link2, Layout,
+  Wifi, WifiOff, Eye
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-interface BoardItem {
-  id: string;
-  type: 'note' | 'roadmap' | 'objective' | 'metric' | 'swot-strength' | 'swot-weakness' | 'swot-opportunity' | 'swot-threat' | 'okr-objective' | 'okr-keyresult' | 'risk' | 'idea' | 'task' | 'milestone';
-  title: string;
-  content: string;
-  position: { x: number; y: number };
-  color: 'gold' | 'blue' | 'green' | 'purple' | 'red' | 'orange' | 'cyan' | 'pink';
-  priority?: 'low' | 'medium' | 'high' | 'critical';
-  status?: 'todo' | 'in-progress' | 'completed' | 'blocked';
-  assignee?: string;
-  dueDate?: string;
-  tags?: string[];
-  comments?: Comment[];
-  connections?: string[];
-}
 
-interface Comment {
-  id: string;
-  author: string;
-  content: string;
-  timestamp: string;
+// interface BoardComment {
+//   id: string;
+//   board_item_id: string;
+//   user_id: string;
+//   content: string;
+//   created_at: string;
+//   user?: {
+//     full_name: string;
+//     avatar_url?: string;
+//   };
+// }
+
+interface ActiveUser {
+  user_id: string;
+  board_id: string;
+  full_name: string;
+  avatar_url?: string;
+  last_seen: string;
+  cursor_x?: number;
+  cursor_y?: number;
 }
 
 interface BoardTemplate {
   id: string;
   name: string;
   description: string;
-  items: Omit<BoardItem, 'id'>[];
+  items: Omit<BoardItem, 'id' | 'board_id' | 'assignee_id' | 'created_at' | 'updated_at' | 'created_by' | 'connections'>[];
 }
 
 const templates: BoardTemplate[] = [
@@ -86,7 +86,6 @@ export default function EnhancedBoardroomPage() {
     boards, 
     addBoard, 
     updateBoard, 
-    loadBoard, 
     setCurrentBoard,
     addBoardItem,
     updateBoardItem,
@@ -95,7 +94,9 @@ export default function EnhancedBoardroomPage() {
   } = useAppStore();
   
   const [items, setItems] = useState<BoardItem[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [localItems, setLocalItems] = useState<BoardItem[]>([]);
+  const [activeUsers] = useState<ActiveUser[]>([]);
+  const [isOnline, setIsOnline] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -107,6 +108,37 @@ export default function EnhancedBoardroomPage() {
   const [draggedItem, setDraggedItem] = useState<BoardItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Load board items from database using MCP
+  useEffect(() => {
+    const loadBoardItems = async () => {
+      if (!currentBoard?.id) {
+        // Load default demo board
+        try {
+          const response = await fetch('/api/boards/load-demo');
+          if (response.ok) {
+            const { board, items: boardItems } = await response.json();
+            setItems(boardItems);
+            setCurrentBoardName(board.name);
+          }
+        } catch (error) {
+          console.error('Failed to load demo board:', error);
+          setItems([]);
+        }
+      } else {
+        // Load items from the current board (when proper board system is implemented)
+        const boardItems = currentBoard.items || [];
+        setItems(boardItems);
+      }
+    };
+
+    loadBoardItems();
+  }, [currentBoard]);
+
+  // Sync local items with state
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
+
   // Initialize board if none exists
   useEffect(() => {
     if (!currentBoard && boards.length === 0) {
@@ -114,73 +146,104 @@ export default function EnhancedBoardroomPage() {
     } else if (!currentBoard && boards.length > 0) {
       setCurrentBoard(boards[0]);
     }
-  }, [currentBoard, boards.length]);
+  }, [currentBoard, boards.length, addBoard, setCurrentBoard, boards]);
   
-  const isInitialSyncRef = useRef(false);
-  const previousItemsRef = useRef<BoardItem[]>([]);
-  
-  // Sync items with current board - avoid infinite loop
+  // Network status monitoring
   useEffect(() => {
-    if (currentBoard && !isInitialSyncRef.current) {
-      setItems(currentBoard.items);
-      setCurrentBoardName(currentBoard.name);
-      previousItemsRef.current = currentBoard.items;
-      isInitialSyncRef.current = true;
-    } else if (currentBoard && currentBoard.id !== previousItemsRef.current[0]?.id) {
-      // Board changed, sync new board
-      setItems(currentBoard.items);
-      setCurrentBoardName(currentBoard.name);
-      previousItemsRef.current = currentBoard.items;
-    }
-  }, [currentBoard?.id]);
-  
-  // Update board in store when items change locally
-  useEffect(() => {
-    if (isInitialSyncRef.current && currentBoard && items.length > 0 && items !== previousItemsRef.current) {
-      const timeoutId = setTimeout(() => {
-        updateBoard(currentBoard.id, items);
-        previousItemsRef.current = items;
-      }, 200);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [items, currentBoard?.id]);
+    const handleOnline = () => {
+      setIsOnline(true);
+      addNotification('Back online - syncing changes');
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      addNotification('Working offline');
+    };
 
-  const addItem = (type: BoardItem['type'], template?: boolean) => {
-    const newItem: BoardItem = {
-      id: Date.now().toString(),
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [addNotification]);
+
+  const addItem = async (type: BoardItem['type'], template?: boolean) => {
+    const position = template ? { x: 0, y: 0 } : { x: Math.random() * 400, y: Math.random() * 300 };
+    
+    const newItemData = {
+      board_id: 'e1cfe66d-9da7-4afc-a114-083d99ccecdc', // Using demo board ID
       type,
       title: getDefaultTitle(type),
       content: getDefaultContent(type),
-      position: template ? { x: 0, y: 0 } : { x: Math.random() * 400, y: Math.random() * 300 },
+      position: position,
       color: getTypeColor(type),
-      priority: 'medium',
-      status: 'todo',
-      assignee: 'Abdelrahman',
-      tags: [],
-      comments: [],
-      connections: []
+      priority: 'medium' as const,
+      status: 'todo' as const,
+      tags: []
     };
-    setItems([...items, newItem]);
-    addNotification(`Added new ${type} to board`);
+    
+    try {
+      const response = await fetch('/api/boards/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newItemData),
+      });
+
+      if (response.ok) {
+        const { item } = await response.json();
+        const updatedItems = [...items, item];
+        setItems(updatedItems);
+        addNotification(`Added new ${type} to board`);
+      } else {
+        throw new Error('Failed to create item');
+      }
+    } catch (error) {
+      console.error('Error adding item:', error);
+      addNotification('Failed to add item');
+    }
   };
 
-  const loadTemplate = (templateId: string) => {
+  const loadTemplate = async (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
-    if (!template) return;
+    if (!template || !currentBoard?.id) return;
 
-    const templateItems: BoardItem[] = template.items.map((item, index) => ({
-      ...item,
-      id: `${Date.now()}-${index}`,
-      priority: 'medium',
-      status: 'todo',
-      assignee: 'Abdelrahman',
-      comments: [],
-      connections: []
-    }));
-
-    setItems(templateItems);
-    setCurrentBoardName(template.name);
+    try {
+      // Create all template items
+      const newItems: BoardItem[] = [];
+      for (const [index, item] of template.items.entries()) {
+        const newItem = {
+          id: `template-item-${Date.now()}-${index}`,
+          board_id: currentBoard.id,
+          type: item.type,
+          title: item.title,
+          content: item.content,
+          position: item.position,
+          color: item.color,
+          priority: 'medium' as const,
+          status: 'todo' as const,
+          assignee_id: 'user-1', // Mock user ID for now
+          tags: item.tags || [],
+          connections: []
+        };
+        
+        newItems.push(newItem);
+        addBoardItem(newItem);
+      }
+      
+      // Update local state
+      const updatedItems = [...items, ...newItems];
+      setItems(updatedItems);
+      
+      setCurrentBoardName(template.name);
+      addNotification(`Template "${template.name}" loaded successfully`);
+    } catch (error) {
+      console.error('Error loading template:', error);
+      addNotification('Failed to load template');
+    }
   };
 
   const getDefaultTitle = (type: BoardItem['type']) => {
@@ -302,15 +365,38 @@ export default function EnhancedBoardroomPage() {
     setEditContent(item.content);
   };
 
-  const saveEdit = () => {
-    setItems(items.map(item => 
-      item.id === editingId 
-        ? { ...item, title: editTitle, content: editContent }
-        : item
-    ));
-    setEditingId(null);
-    setEditTitle("");
-    setEditContent("");
+  const saveEdit = async () => {
+    if (!editingId) return;
+    
+    try {
+      const response = await fetch(`/api/boards/items/${editingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: editTitle, content: editContent }),
+      });
+
+      if (response.ok) {
+        // Update in local state
+        const updatedItems = items.map(item => 
+          item.id === editingId 
+            ? { ...item, title: editTitle, content: editContent }
+            : item
+        );
+        setItems(updatedItems);
+        
+        setEditingId(null);
+        setEditTitle("");
+        setEditContent("");
+        addNotification('Item updated');
+      } else {
+        throw new Error('Failed to update item');
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
+      addNotification('Failed to update item');
+    }
   };
 
   const cancelEdit = () => {
@@ -319,9 +405,25 @@ export default function EnhancedBoardroomPage() {
     setEditContent("");
   };
 
-  const deleteItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
-    addNotification('Item deleted');
+  const deleteItem = async (id: string) => {
+    try {
+      const response = await fetch(`/api/boards/items/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Update in local state
+        const updatedItems = items.filter(item => item.id !== id);
+        setItems(updatedItems);
+        
+        addNotification('Item deleted');
+      } else {
+        throw new Error('Failed to delete item');
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      addNotification('Failed to delete item');
+    }
   };
   
   const handleShareBoard = () => {
@@ -340,7 +442,7 @@ export default function EnhancedBoardroomPage() {
     e.dataTransfer.dropEffect = 'move';
   };
   
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedItem) return;
     
@@ -348,24 +450,86 @@ export default function EnhancedBoardroomPage() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setItems(items.map(item => 
-      item.id === draggedItem.id 
-        ? { ...item, position: { x, y } }
-        : item
-    ));
+    try {
+      const response = await fetch(`/api/boards/items/${draggedItem.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ position: { x, y } }),
+      });
+
+      if (response.ok) {
+        // Update in local state
+        const updatedItems = items.map(item => 
+          item.id === draggedItem.id 
+            ? { ...item, position: { x, y } }
+            : item
+        );
+        setItems(updatedItems);
+      } else {
+        throw new Error('Failed to update position');
+      }
+    } catch (error) {
+      console.error('Error updating item position:', error);
+      addNotification('Failed to update item position');
+    }
+    
     setDraggedItem(null);
   };
 
-  const updateItemStatus = (id: string, status: BoardItem['status']) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, status } : item
-    ));
+  const updateItemStatus = async (id: string, status: BoardItem['status']) => {
+    try {
+      const response = await fetch(`/api/boards/items/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        // Update in local state
+        const updatedItems = items.map(item => 
+          item.id === id ? { ...item, status } : item
+        );
+        setItems(updatedItems);
+        
+        addNotification(`Status updated to ${status}`);
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      addNotification('Failed to update status');
+    }
   };
 
-  const updateItemPriority = (id: string, priority: BoardItem['priority']) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, priority } : item
-    ));
+  const updateItemPriority = async (id: string, priority: BoardItem['priority']) => {
+    try {
+      const response = await fetch(`/api/boards/items/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority }),
+      });
+
+      if (response.ok) {
+        // Update in local state
+        const updatedItems = items.map(item => 
+          item.id === id ? { ...item, priority } : item
+        );
+        setItems(updatedItems);
+        
+        addNotification(`Priority updated to ${priority}`);
+      } else {
+        throw new Error('Failed to update priority');
+      }
+    } catch (error) {
+      console.error('Error updating priority:', error);
+      addNotification('Failed to update priority');
+    }
   };
 
   const exportBoard = () => {
@@ -409,7 +573,7 @@ export default function EnhancedBoardroomPage() {
     }
   };
 
-  const filteredItems = items.filter(item => {
+  const filteredItems = localItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          item.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'all' || item.type === filterType;
@@ -454,6 +618,41 @@ export default function EnhancedBoardroomPage() {
           </div>
         </div>
         
+        {/* Connection Status & Active Users */}
+        <div className="flex items-center gap-3 mr-4">
+          <div className={`flex items-center gap-2 px-3 py-1 glass text-xs ${
+            isOnline 
+              ? 'text-green-400 border-green-500/20' 
+              : 'text-orange-400 border-orange-500/20'
+          }`}>
+            {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+            {isOnline ? 'Online' : 'Offline'}
+          </div>
+          
+          {/* Active Users */}
+          {activeUsers.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Eye className="h-3 w-3 text-mid" />
+              <div className="flex -space-x-2">
+                {activeUsers.slice(0, 3).map((activeUser) => (
+                  <div 
+                    key={activeUser.user_id}
+                    className="w-6 h-6 bg-gradient-to-br from-gold/20 to-gold/10 border border-gold/30 flex items-center justify-center text-xs font-medium text-gold"
+                    title={activeUser.full_name}
+                  >
+                    {activeUser.full_name[0]?.toUpperCase()}
+                  </div>
+                ))}
+                {activeUsers.length > 3 && (
+                  <div className="w-6 h-6 bg-panel border border-border/30 flex items-center justify-center text-xs text-mid">
+                    +{activeUsers.length - 3}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Premium Board Actions */}
         <div className="flex gap-3">
           <Button 

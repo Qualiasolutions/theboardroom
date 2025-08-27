@@ -1,4 +1,4 @@
-import { Navigation } from "@/components/layout/navigation";
+import { AuthenticatedNavigation } from "@/components/layout/AuthenticatedNavigation";
 import { Header } from "@/components/layout/header";
 
 export default function AuthenticatedLayout({
@@ -8,7 +8,7 @@ export default function AuthenticatedLayout({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <AuthenticatedNavigation />
       <Header />
       <main className="lg:ml-64 pt-16">
         <div className="p-4 lg:p-6">
