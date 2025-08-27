@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-interface RouteParams {
-  params: { id: string };
-}
-
 export async function PATCH(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const updates = await request.json();
     
     // In a real implementation, this would use MCP Supabase operations
@@ -37,10 +33,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // In a real implementation, this would use MCP Supabase operations
     // For now, we'll simulate the delete operation
