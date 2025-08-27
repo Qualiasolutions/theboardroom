@@ -10,7 +10,7 @@ import {
   Plus, Edit3, Save, X, Target, Calendar, Users, TrendingUp, 
   Download, Upload, Share2, Grid3X3, FileText, Lightbulb,
   MessageSquare, UserCheck, Clock, Filter, Search, MoreHorizontal,
-  Zap, AlertTriangle, CheckCircle, Star, ArrowRight, Link2
+  Zap, AlertTriangle, CheckCircle, Star, ArrowRight, Link2, Layout
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -114,22 +114,37 @@ export default function EnhancedBoardroomPage() {
     } else if (!currentBoard && boards.length > 0) {
       setCurrentBoard(boards[0]);
     }
-  }, [currentBoard, boards, addBoard, setCurrentBoard]);
+  }, [currentBoard, boards.length]);
   
-  // Sync items with current board
+  const isInitialSyncRef = useRef(false);
+  const previousItemsRef = useRef<BoardItem[]>([]);
+  
+  // Sync items with current board - avoid infinite loop
   useEffect(() => {
-    if (currentBoard) {
+    if (currentBoard && !isInitialSyncRef.current) {
       setItems(currentBoard.items);
       setCurrentBoardName(currentBoard.name);
+      previousItemsRef.current = currentBoard.items;
+      isInitialSyncRef.current = true;
+    } else if (currentBoard && currentBoard.id !== previousItemsRef.current[0]?.id) {
+      // Board changed, sync new board
+      setItems(currentBoard.items);
+      setCurrentBoardName(currentBoard.name);
+      previousItemsRef.current = currentBoard.items;
     }
-  }, [currentBoard]);
+  }, [currentBoard?.id]);
   
-  // Update board when items change
+  // Update board in store when items change locally
   useEffect(() => {
-    if (currentBoard && items !== currentBoard.items) {
-      updateBoard(currentBoard.id, items);
+    if (isInitialSyncRef.current && currentBoard && items.length > 0 && items !== previousItemsRef.current) {
+      const timeoutId = setTimeout(() => {
+        updateBoard(currentBoard.id, items);
+        previousItemsRef.current = items;
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [items, currentBoard, updateBoard]);
+  }, [items, currentBoard?.id]);
 
   const addItem = (type: BoardItem['type'], template?: boolean) => {
     const newItem: BoardItem = {
@@ -403,50 +418,69 @@ export default function EnhancedBoardroomPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+      {/* Premium Header */}
+      <div className="flex justify-between items-start mb-8">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            {isEditingBoardName ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  value={currentBoardName}
-                  onChange={(e) => setCurrentBoardName(e.target.value)}
-                  className="text-2xl font-bold h-auto border-none p-0 bg-transparent"
-                  onBlur={() => setIsEditingBoardName(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setIsEditingBoardName(false)}
-                  autoFocus
-                />
-                <Button size="sm" onClick={() => setIsEditingBoardName(false)}>
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <h1 
-                className="text-3xl font-bold text-foreground cursor-pointer hover:text-gold transition-colors"
-                onClick={() => setIsEditingBoardName(true)}
-              >
-                {currentBoardName}
-              </h1>
-            )}
-            <Edit3 className="h-4 w-4 text-mid" />
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center">
+              <Layout className="h-6 w-6 text-gold" />
+            </div>
+            <div>
+              {isEditingBoardName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={currentBoardName}
+                    onChange={(e) => setCurrentBoardName(e.target.value)}
+                    className="text-2xl font-bold h-auto border-none p-0 bg-transparent focus:bg-panel/20 px-2 py-1"
+                    onBlur={() => setIsEditingBoardName(false)}
+                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingBoardName(false)}
+                    autoFocus
+                  />
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditingBoardName(false)}>
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <h1 
+                  className="text-3xl font-bold bg-gradient-to-r from-foreground to-gold bg-clip-text text-transparent cursor-pointer hover:from-gold hover:to-gold-soft transition-all duration-300 group flex items-center gap-2"
+                  onClick={() => setIsEditingBoardName(true)}
+                >
+                  {currentBoardName}
+                  <Edit3 className="h-4 w-4 text-mid group-hover:text-gold transition-colors opacity-0 group-hover:opacity-100" />
+                </h1>
+              )}
+              <p className="text-mid/80 font-medium">Strategic Planning Workspace • {items.length} items</p>
+            </div>
           </div>
-          <p className="text-mid">Professional strategic planning workspace</p>
         </div>
         
-        {/* Board Actions */}
-        <div className="flex gap-2">
-          <Button onClick={exportBoard} variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+        {/* Premium Board Actions */}
+        <div className="flex gap-3">
+          <Button 
+            onClick={exportBoard} 
+            variant="outline" 
+            size="sm"
+            className="glass hover-lift border-gold/20 hover:border-gold/40 hover:bg-gold/10 transition-all duration-300 group"
+          >
+            <Download className="h-4 w-4 mr-2 group-hover:text-gold transition-colors" />
             Export
           </Button>
-          <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
+          <Button 
+            onClick={() => fileInputRef.current?.click()} 
+            variant="outline" 
+            size="sm"
+            className="glass hover-lift border-gold/20 hover:border-gold/40 hover:bg-gold/10 transition-all duration-300 group"
+          >
+            <Upload className="h-4 w-4 mr-2 group-hover:text-gold transition-colors" />
             Import
           </Button>
-          <Button onClick={handleShareBoard} variant="outline" size="sm">
+          <Button 
+            onClick={handleShareBoard} 
+            size="sm"
+            className="bg-gradient-to-r from-gold to-gold-soft hover:from-gold-soft hover:to-gold text-background hover-lift shadow-premium transition-all duration-300"
+          >
             <Share2 className="h-4 w-4 mr-2" />
-            Share
+            Share Board
           </Button>
         </div>
       </div>
@@ -461,7 +495,7 @@ export default function EnhancedBoardroomPage() {
 
       {/* Main Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 bg-panel">
+        <TabsList className="grid w-full grid-cols-4 bg-panel/50 glass border border-border/20 p-1">
           <TabsTrigger value="board">Strategic Board</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="saved">Saved Boards</TabsTrigger>
@@ -470,60 +504,82 @@ export default function EnhancedBoardroomPage() {
 
         {/* Strategic Board Tab */}
         <TabsContent value="board" className="space-y-4">
-          {/* Controls */}
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid" />
-                <Input
-                  placeholder="Search items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
-                />
+          {/* Premium Controls */}
+          <div className="glass p-4 mb-6">
+            <div className="flex justify-between items-center gap-6">
+              <div className="flex items-center gap-4">
+                {/* Enhanced Search */}
+                <div className="relative group">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid group-focus-within:text-gold transition-colors" />
+                  <Input
+                    placeholder="Search strategic items..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 w-72 bg-panel/50 border-border/30 focus:border-gold/50 transition-all duration-300 hover:bg-panel/70"
+                  />
+                </div>
+
+                {/* Premium Filter */}
+                <select 
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="bg-panel/80 border border-border/30 px-4 py-2 text-sm hover:bg-panel focus:border-gold/50 transition-all duration-300 min-w-36"
+                >
+                  <option value="all">All Types</option>
+                  <option value="note">Notes</option>
+                  <option value="objective">Objectives</option>
+                  <option value="roadmap">Roadmap</option>
+                  <option value="metric">Metrics</option>
+                  <option value="risk">Risks</option>
+                  <option value="idea">Ideas</option>
+                  <option value="task">Tasks</option>
+                </select>
               </div>
 
-              {/* Filter */}
-              <select 
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="bg-panel border border-border px-3 py-2 text-sm"
-              >
-                <option value="all">All Types</option>
-                <option value="note">Notes</option>
-                <option value="objective">Objectives</option>
-                <option value="roadmap">Roadmap</option>
-                <option value="metric">Metrics</option>
-                <option value="risk">Risks</option>
-                <option value="idea">Ideas</option>
-                <option value="task">Tasks</option>
-              </select>
-            </div>
-
-            {/* Add Item Buttons */}
-            <div className="flex gap-2">
-              <Button onClick={() => addItem('note')} variant="outline" size="sm">
-                <Edit3 className="h-4 w-4 mr-2" />
-                Note
-              </Button>
-              <Button onClick={() => addItem('objective')} variant="outline" size="sm">
-                <Target className="h-4 w-4 mr-2" />
-                Objective
-              </Button>
-              <Button onClick={() => addItem('task')} variant="outline" size="sm">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Task
-              </Button>
-              <Button onClick={() => addItem('idea')} variant="outline" size="sm">
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Idea
-              </Button>
+              {/* Premium Add Item Palette */}
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => addItem('note')} 
+                  variant="outline" 
+                  size="sm"
+                  className="hover-lift border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/10 group transition-all duration-300"
+                >
+                  <Edit3 className="h-4 w-4 mr-2 group-hover:text-blue-400 transition-colors" />
+                  Note
+                </Button>
+                <Button 
+                  onClick={() => addItem('objective')} 
+                  variant="outline" 
+                  size="sm"
+                  className="hover-lift border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10 group transition-all duration-300"
+                >
+                  <Target className="h-4 w-4 mr-2 group-hover:text-green-400 transition-colors" />
+                  Objective
+                </Button>
+                <Button 
+                  onClick={() => addItem('task')} 
+                  variant="outline" 
+                  size="sm"
+                  className="hover-lift border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/10 group transition-all duration-300"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2 group-hover:text-orange-400 transition-colors" />
+                  Task
+                </Button>
+                <Button 
+                  onClick={() => addItem('idea')} 
+                  variant="outline" 
+                  size="sm"
+                  className="hover-lift border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10 group transition-all duration-300"
+                >
+                  <Lightbulb className="h-4 w-4 mr-2 group-hover:text-purple-400 transition-colors" />
+                  Idea
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Board Area */}
-          <Card className="bg-panel border-border min-h-[600px] relative overflow-hidden">
+          {/* Premium Board Canvas */}
+          <Card className="glass shadow-premium-lg min-h-[700px] relative overflow-hidden group">
             <CardContent className="p-6 h-full">
               {filteredItems.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-center">
@@ -563,7 +619,7 @@ export default function EnhancedBoardroomPage() {
                       key={item.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item)}
-                      className={`absolute w-80 ${getColorClasses(item.color)} cursor-move hover:shadow-lg transition-shadow`}
+                      className={`absolute w-80 ${getColorClasses(item.color)} cursor-move hover:shadow-premium transition-all duration-300 hover:scale-105 hover-lift group/item`}
                       style={{ 
                         left: item.position.x, 
                         top: item.position.y 

@@ -78,6 +78,7 @@ src/
 - Valid codes: `FOUNDERS2024`, `DEMO`
 - Protected routes use `(authenticated)` route group
 - No real session management or backend integration
+- Login validation occurs on landing page (`src/app/page.tsx`)
 
 ### Development Notes
 - All data is client-side only (no API calls)
@@ -86,6 +87,11 @@ src/
 - Zero border-radius is enforced in Tailwind config
 - Path alias `@/*` maps to `./src/*`
 - TypeScript strict mode enabled
+
+### Common Debugging Patterns
+- **React Infinite Loops**: When modifying the boardroom page, be careful with useEffect dependencies. The store functions `addBoard`, `setCurrentBoard`, `updateBoard` should not be in dependency arrays as they can cause infinite loops
+- **Zustand State Persistence**: State is persisted in localStorage under `boardroom-storage` key. Clear this if state becomes corrupted during development
+- **Board Item Updates**: Use debouncing for rapid board updates to prevent performance issues (see `src/app/(authenticated)/boardroom/page.tsx:135`)
 
 ### Deployment
 - Optimized for Vercel deployment

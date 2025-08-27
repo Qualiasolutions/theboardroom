@@ -1,27 +1,17 @@
-"use client";
-
-export const dynamic = 'force-dynamic';
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock, Mail, Shield, Users } from "lucide-react";
+import { Shield, Users, Zap } from "lucide-react";
 
-export default function LandingPage() {
-  const [email, setEmail] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const router = useRouter();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock authentication - in production, this would validate invite codes
-    if (inviteCode === "FOUNDERS2024" || inviteCode === "DEMO") {
-      router.push("/dashboard");
-    }
-  };
+export default async function LandingPage() {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (user) {
+    redirect('/dashboard')
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -55,69 +45,31 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="text-left">
-              <Lock className="h-8 w-8 text-gold mb-3" />
-              <h3 className="font-semibold mb-2">Invitation Only</h3>
+              <Zap className="h-8 w-8 text-gold mb-3" />
+              <h3 className="font-semibold mb-2">Real-time Collaboration</h3>
               <p className="text-sm text-mid">
-                Access by invitation from existing members. Quality over quantity.
+                Strategic planning with live collaboration tools. Move fast, make decisions.
               </p>
             </div>
           </div>
 
-          {/* Login Card */}
-          <Card className="max-w-md mx-auto bg-panel border-border">
-            <CardHeader>
-              <CardTitle>Member Access</CardTitle>
-              <CardDescription className="text-mid">
-                Enter your invitation code to access the boardroom
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleLogin}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="founder@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="inviteCode" className="text-sm font-medium">
-                    Invitation Code
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-mid" />
-                    <Input
-                      id="inviteCode"
-                      type="password"
-                      placeholder="Enter your invite code"
-                      value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3">
-                <Button type="submit" className="w-full">
-                  Access Boardroom
+          {/* Access Card */}
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-panel border border-border p-8 mb-6">
+              <h2 className="text-xl font-semibold mb-4">Member Access</h2>
+              <p className="text-mid mb-6">
+                Access to Boardroom is by invitation only. Sign in with your member credentials.
+              </p>
+              <Link href="/auth/login">
+                <Button className="w-full bg-gradient-to-r from-gold to-gold/90 hover:from-gold/90 hover:to-gold text-background font-semibold">
+                  Member Sign In
                 </Button>
-                <p className="text-xs text-mid text-center">
-                  For demo access, use code: <span className="font-mono text-gold">DEMO</span>
-                </p>
-              </CardFooter>
-            </form>
-          </Card>
+              </Link>
+            </div>
+            <p className="text-sm text-mid">
+              Need access? Contact your organization administrator.
+            </p>
+          </div>
         </div>
       </div>
 

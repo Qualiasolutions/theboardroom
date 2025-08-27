@@ -207,11 +207,12 @@ export const useAppStore = create<AppStore>()(
       addNotification: (message) => {
         // Use the toast system instead of storing notifications
         if (typeof window !== 'undefined') {
-          const { toast } = require('@/lib/use-toast');
-          toast({
-            title: message,
-            variant: "info",
-            duration: 3000,
+          import('@/lib/use-toast').then(({ toast }) => {
+            toast({
+              title: message,
+              variant: "info",
+              duration: 3000,
+            });
           });
         }
       },
