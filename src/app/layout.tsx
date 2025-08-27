@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { ChatbotWidget } from "@/components/ui/chatbot-widget";
+import { EnhancedChatbotWidget } from "@/components/ui/enhanced-chatbot-widget";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -21,7 +22,8 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <ThemeProvider>
           {children}
-          <ChatbotWidget />
+          <EnhancedChatbotWidget />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

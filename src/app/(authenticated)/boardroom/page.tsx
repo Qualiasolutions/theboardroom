@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppStore } from "@/lib/store";
 import { 
   Plus, Edit3, Save, X, Target, Calendar, Users, TrendingUp, 
   Download, Upload, Share2, Grid3X3, FileText, Lightbulb,
@@ -80,6 +81,19 @@ const templates: BoardTemplate[] = [
 ];
 
 export default function EnhancedBoardroomPage() {
+  const { 
+    currentBoard, 
+    boards, 
+    addBoard, 
+    updateBoard, 
+    loadBoard, 
+    setCurrentBoard,
+    addBoardItem,
+    updateBoardItem,
+    deleteBoardItem,
+    addNotification 
+  } = useAppStore();
+  
   const [items, setItems] = useState<BoardItem[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,11 +101,35 @@ export default function EnhancedBoardroomPage() {
   const [editContent, setEditContent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>('all');
-  const [savedBoards, setSavedBoards] = useState<string[]>(['Strategic Plan 2024', 'Q1 Objectives', 'Risk Assessment']);
   const [currentBoardName, setCurrentBoardName] = useState('New Board');
   const [isEditingBoardName, setIsEditingBoardName] = useState(false);
   const [activeTab, setActiveTab] = useState('board');
+  const [draggedItem, setDraggedItem] = useState<BoardItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Initialize board if none exists
+  useEffect(() => {
+    if (!currentBoard && boards.length === 0) {
+      addBoard('New Board');
+    } else if (!currentBoard && boards.length > 0) {
+      setCurrentBoard(boards[0]);
+    }
+  }, [currentBoard, boards, addBoard, setCurrentBoard]);
+  
+  // Sync items with current board
+  useEffect(() => {
+    if (currentBoard) {
+      setItems(currentBoard.items);
+      setCurrentBoardName(currentBoard.name);
+    }
+  }, [currentBoard]);
+  
+  // Update board when items change
+  useEffect(() => {
+    if (currentBoard && items !== currentBoard.items) {
+      updateBoard(currentBoard.id, items);
+    }
+  }, [items, currentBoard, updateBoard]);
 
   const addItem = (type: BoardItem['type'], template?: boolean) => {
     const newItem: BoardItem = {
@@ -109,6 +147,7 @@ export default function EnhancedBoardroomPage() {
       connections: []
     };
     setItems([...items, newItem]);
+    addNotification(`Added new ${type} to board`);
   };
 
   const loadTemplate = (templateId: string) => {
@@ -267,6 +306,39 @@ export default function EnhancedBoardroomPage() {
 
   const deleteItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
+    addNotification('Item deleted');
+  };
+  
+  const handleShareBoard = () => {
+    const shareUrl = `${window.location.origin}/boardroom?board=${currentBoard?.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    addNotification('Board link copied to clipboard!');
+  };
+  
+  const handleDragStart = (e: React.DragEvent, item: BoardItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setItems(items.map(item => 
+      item.id === draggedItem.id 
+        ? { ...item, position: { x, y } }
+        : item
+    ));
+    setDraggedItem(null);
   };
 
   const updateItemStatus = (id: string, status: BoardItem['status']) => {
@@ -294,6 +366,7 @@ export default function EnhancedBoardroomPage() {
     a.download = `${currentBoardName.toLowerCase().replace(/\s+/g, '-')}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    addNotification(`Board exported: ${currentBoardName}.json`);
   };
 
   const importBoard = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,11 +379,19 @@ export default function EnhancedBoardroomPage() {
         const boardData = JSON.parse(e.target?.result as string);
         setItems(boardData.items || []);
         setCurrentBoardName(boardData.name || 'Imported Board');
+        if (currentBoard) {
+          updateBoard(currentBoard.id, boardData.items || []);
+        }
+        addNotification(`Board imported successfully`);
       } catch (error) {
         console.error('Error importing board:', error);
+        addNotification(`Error importing board`);
       }
     };
     reader.readAsText(file);
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const filteredItems = items.filter(item => {
@@ -363,7 +444,7 @@ export default function EnhancedBoardroomPage() {
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button onClick={handleShareBoard} variant="outline" size="sm">
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
@@ -472,10 +553,16 @@ export default function EnhancedBoardroomPage() {
                   </div>
                 </div>
               ) : (
-                <div className="relative w-full h-full">
+                <div 
+                  className="relative w-full h-full"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
                   {filteredItems.map((item) => (
                     <Card 
                       key={item.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, item)}
                       className={`absolute w-80 ${getColorClasses(item.color)} cursor-move hover:shadow-lg transition-shadow`}
                       style={{ 
                         left: item.position.x, 
@@ -623,16 +710,34 @@ export default function EnhancedBoardroomPage() {
         {/* Saved Boards Tab */}
         <TabsContent value="saved" className="space-y-4">
           <div className="space-y-3">
-            {savedBoards.map((boardName, index) => (
-              <Card key={index} className="bg-panel border-border">
+            <Button 
+              onClick={() => addBoard(`Board ${boards.length + 1}`)}
+              className="w-full bg-gold hover:bg-gold-soft text-background mb-4"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Board
+            </Button>
+            {boards.map((board) => (
+              <Card key={board.id} className="bg-panel border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{boardName}</h3>
-                      <p className="text-sm text-mid">Last modified: {new Date().toLocaleDateString()}</p>
+                      <h3 className="font-medium">{board.name}</h3>
+                      <p className="text-sm text-mid">Last modified: {new Date(board.updatedAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-mid">{board.items.length} items</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">Load</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentBoard(board);
+                          setActiveTab('board');
+                          addNotification(`Loaded board: ${board.name}`);
+                        }}
+                      >
+                        {currentBoard?.id === board.id ? 'Current' : 'Load'}
+                      </Button>
                       <Button size="sm" variant="outline">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
