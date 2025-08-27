@@ -112,13 +112,6 @@ export default function LandingPage() {
                 <Button type="submit" className="w-full">
                   Access Boardroom
                 </Button>
-                <div className="flex gap-2">
-                  <Link href="/membership" className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      Join as Member
-                    </Button>
-                  </Link>
-                </div>
                 <p className="text-xs text-mid text-center">
                   For demo access, use code: <span className="font-mono text-gold">DEMO</span>
                 </p>
